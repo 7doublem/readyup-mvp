@@ -1,0 +1,24 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "Firebase configuration, security rules, and data seeding scripts for ReadyUp",
+  "scripts": {
+    "seed": "tsx seed.ts",
+    "dev": "tsx watch server.ts",
+    "start": "tsx server.ts"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.2.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "firebase-admin": "^13.6.1",
+    "stripe": "^20.3.1"
+  }
+}
