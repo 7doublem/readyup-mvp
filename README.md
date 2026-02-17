@@ -114,7 +114,7 @@ Place your Firebase service account JSON file at `backend/service-account-key.js
 
 ### 4. Seed the Database
 
-This creates two test users and 5 sample gaming events:
+This clears and recreates 5 sample gaming events:
 
 ```bash
 npm run seed
@@ -136,7 +136,7 @@ Open [http://localhost:5174](http://localhost:5174) in your browser.
 
 ## Test Credentials
 
-The seed script creates two accounts you can use immediately:
+Use these accounts for testing:
 
 | Role | Email | Password |
 |---|---|---|

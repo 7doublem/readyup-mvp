@@ -1,7 +1,6 @@
 // Database seed script
 // Populates Firestore with test data so the app can be demoed immediately.
-// Creates two Firebase Auth users (staff + player) with known credentials,
-// then inserts 5 upcoming gaming events. Run via: npm run seed (from root)
+// Inserts 5 upcoming gaming events. Run via: npm run seed (from root)
 //
 // Prerequisites:
 // A Firebase service account key at the path specified in .env
@@ -9,7 +8,6 @@
 
 import "dotenv/config";
 import { initializeApp, cert } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
 // Loads the service account key from the path specified in .env
@@ -26,7 +24,6 @@ const serviceAccount = require(serviceAccountPath);
 initializeApp({ credential: cert(serviceAccount) });
 
 const db = getFirestore();
-const auth = getAuth();
 
 // Deletes all documents in a collection
 async function clearCollection(collectionName: string): Promise<void> {
@@ -37,60 +34,28 @@ async function clearCollection(collectionName: string): Promise<void> {
   console.log(`  Cleared ${snapshot.size} docs from "${collectionName}"`);
 }
 
-// Creates a Firebase Auth user, or reuses the existing one if the email is taken
-async function createAuthUser(email: string, password: string): Promise<string> {
-  try {
-    const user = await auth.createUser({ email, password });
-    return user.uid;
-  } catch (error: unknown) {
-    // If the user already exists, fetch their UID instead
-    if (typeof error === "object" && error !== null && "code" in error &&
-      (error as { code: string }).code === "auth/email-already-exists") {
-      const existing = await auth.getUserByEmail(email);
-      return existing.uid;
-    }
-    throw error;
-  }
-}
-
 async function seed() {
   console.log("\nStarting seed...\n");
 
   // Clear existing data
   console.log("Clearing existing data...");
-  await clearCollection("users");
   await clearCollection("events");
 
-  // Users are created in Firebase Auth first so they can actually log in,
-  // then their Firestore profile is created with the matching UID
-  console.log("\nCreating users...");
+  // Use an existing staff member as the creator for seeded events
+  const staffSnapshot = await db
+    .collection("users")
+    .where("role", "==", "staff")
+    .limit(1)
+    .get();
 
-  const STAFF_EMAIL = "staff@readyup.gg";
-  const STAFF_PASSWORD = "ReadyUp2026!";
-  const PLAYER_EMAIL = "player@readyup.gg";
-  const PLAYER_PASSWORD = "ReadyUp2026!";
+  if (staffSnapshot.empty) {
+    console.error(
+      "No staff user found in the users collection. Create a staff user before running seed."
+    );
+    process.exit(1);
+  }
 
-  const staffUid = await createAuthUser(STAFF_EMAIL, STAFF_PASSWORD);
-  await db.collection("users").doc(staffUid).set({
-    role: "staff",
-    email: STAFF_EMAIL,
-    avatarUrl: "https://media.rawg.io/media/games/456/456dea5e1c7e3cd07060c14e96612001.jpg",
-    displayName: "staff1",
-    joinedAt: FieldValue.serverTimestamp(),
-  });
-  console.log(`  Created staff user: ${STAFF_EMAIL} (${staffUid})`);
-  console.log(`  Staff login — email: ${STAFF_EMAIL}, password: ${STAFF_PASSWORD}`);
-
-  const playerUid = await createAuthUser(PLAYER_EMAIL, PLAYER_PASSWORD);
-  await db.collection("users").doc(playerUid).set({
-    role: "user",
-    email: PLAYER_EMAIL,
-    avatarUrl: "https://media.rawg.io/media/games/618/618c2031a07bbff6b4f611f10b6571c2.jpg",
-    displayName: "user1",
-    joinedAt: FieldValue.serverTimestamp(),
-  });
-  console.log(`  Created player user: ${PLAYER_EMAIL} (${playerUid})`);
-  console.log(`  Player login — email: ${PLAYER_EMAIL}, password: ${PLAYER_PASSWORD}`);
+  const staffUid = staffSnapshot.docs[0].id;
 
   // Create events referencing the staff user
   console.log("\nCreating events...");
